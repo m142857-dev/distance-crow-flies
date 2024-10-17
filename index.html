@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Distance Calculator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            text-align: center;
+        }
+
+        input {
+            padding: 10px;
+            width: 300px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        #result {
+            margin-top: 20px;
+            font-size: 20px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>Distance Between Addresses</h1>
+    <p>Enter two addresses to calculate the distance between them:</p>
+
+    <div>
+        <input type="text" id="address1" placeholder="Enter first address" required>
+        <br>
+        <button onclick="calculateDistance()">Calculate Distance</button>
+    </div>
+
+    <div id="result"></div>
+
+    <script>
+        function calculateDistance() {
+            const address1 = document.getElementById('address1').value + " winnipeg mb";
+            const address2 = "840 corydon ave winnipeg mb";
+
+            if (!address1 || !address2) {
+                alert("Please enter both addresses.");
+                return;
+            }
+
+            // Use OpenStreetMap's Nominatim API to get coordinates
+            const geocodeUrl1 = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address1)}`;
+            const geocodeUrl2 = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address2)}`;
+
+            // Fetch coordinates for both addresses
+            Promise.all([fetch(geocodeUrl1), fetch(geocodeUrl2)])
+                .then(responses => Promise.all(responses.map(res => res.json())))
+                .then(([data1, data2]) => {
+                    if (data1.length === 0 || data2.length === 0) {
+                        document.getElementById('result').innerText = "Unable to find one or both addresses.";
+                        return;
+                    }
+
+                    const coords1 = {
+                        lat: parseFloat(data1[0].lat),
+                        lon: parseFloat(data1[0].lon)
+                    };
+                    const coords2 = {
+                        lat: parseFloat(data2[0].lat),
+                        lon: parseFloat(data2[0].lon)
+                    };
+
+                    const distance = haversineDistance(coords1, coords2);
+                    document.getElementById('result').innerText = `Distance: ${distance.toFixed(2)} km`;
+                })
+                .catch(err => {
+                    document.getElementById('result').innerText = "Error fetching coordinates.";
+                });
+        }
+
+        // Haversine formula to calculate the distance between two points (lat, lon)
+        function haversineDistance(coords1, coords2) {
+            const R = 6371; // Radius of the Earth in km
+            const dLat = degreesToRadians(coords2.lat - coords1.lat);
+            const dLon = degreesToRadians(coords2.lon - coords1.lon);
+            const lat1 = degreesToRadians(coords1.lat);
+            const lat2 = degreesToRadians(coords2.lat);
+
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(lat1) * Math.cos(lat2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            return R * c; // Distance in km
+        }
+
+        function degreesToRadians(degrees) {
+            return degrees * (Math.PI / 180);
+        }
+    </script>
+
+</body>
+
+</html>
